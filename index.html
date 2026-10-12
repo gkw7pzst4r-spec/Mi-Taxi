@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b2a">
+<title>Mi Taxeo</title>
+<style>
+:root{--green:#145c3b;--light:#eaf5ee;--ink:#17221b;--muted:#647067;--line:#dce5de;--bg:#f4f7f4;--orange:#fff0d5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--green);color:white;padding:22px 18px 26px;border-radius:0 0 22px 22px}header h1{margin:0;font-size:25px}header p{margin:5px 0 0;color:#d6e9dc}
+main{max-width:760px;margin:auto;padding:16px;display:grid;gap:14px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card,section{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 2px 7px #152b1a08}
+.metric span{font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:22px;margin-top:5px}.metric small{color:var(--muted)}
+h2{font-size:18px;margin:0 0 13px}label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+input,select,button{font:inherit}input,select{width:100%;padding:12px;border:1px solid #cbd7ce;border-radius:10px;background:white;color:var(--ink)}
+.methods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.method{padding:12px 4px;border:1px solid var(--line);border-radius:11px;text-align:center;background:white;font-weight:650;color:var(--ink);cursor:pointer}.method.active{border:2px solid var(--green);background:var(--light);color:var(--green)}
+button.primary{width:100%;margin-top:14px;background:var(--green);color:white;border:0;padding:13px;border-radius:11px;font-weight:700;cursor:pointer}
+button.secondary,button.danger{border:1px solid var(--line);background:white;padding:8px 10px;border-radius:9px;cursor:pointer;font-size:13px}button.danger{color:#a12c2c}
+.item{padding:12px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.item:last-child{border-bottom:0}.item strong{display:block}.muted{color:var(--muted);font-size:12px;margin-top:4px}.amount{font-weight:750;white-space:nowrap}.pill{display:inline-block;font-size:11px;border-radius:99px;padding:4px 8px;background:var(--light);color:var(--green);margin-top:5px}.pill.debt{background:var(--orange);color:#815400}.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.notice{font-size:12px;color:var(--muted);line-height:1.45}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button{border:1px solid var(--line);background:white;border-radius:99px;padding:8px 12px;cursor:pointer}.tabs button.active{background:var(--green);color:white}
+@media(min-width:600px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.metric strong{font-size:20px}}
+</style>
+</head>
+<body>
+<header><h1>🚖 Mi Taxeo</h1><p>Controlá tus viajes, cobros y ganancias</p></header>
+<main>
+<div class="cards">
+ <div class="card metric"><span>Producido registrado</span><strong id="total">₡0</strong><small>Incluye fiados</small></div>
+ <div class="card metric"><span>Dinero recibido</span><strong id="received">₡0</strong><small>SINPE + efectivo</small></div>
+ <div class="card metric"><span>Pendiente de cobro</span><strong id="owed">₡0</strong><small>Fiados sin pagar</small></div>
+ <div class="card metric"><span>Gastos del día</span><strong id="expenses">₡0</strong><small>Combustible y otros</small></div>
+</div>
+<section>
+<h2>➕ Registrar viaje</h2>
+<form id="tripForm">
+<label for="amount">Monto del viaje (₡)</label><input id="amount" type="number" min="1" step="1" value="2500" required>
+<label>Forma de pago</label>
+<div class="methods" id="methods">
+<button type="button" class="method" data-method="SINPE">📱 SINPE</button>
+<button type="button" class="method active" data-method="Efectivo">💵 Efectivo</button>
+<button type="button" class="method" data-method="Fiado">📒 Fiado</button>
+</div>
+<label for="customer">Cliente o descripción (opcional)</label><input id="customer" maxlength="100" placeholder="Ej. viaje al centro">
+<button class="primary" type="submit">Guardar viaje</button>
+</form>
+<p class="notice">Los viajes fiados quedan como pendientes y no se cuentan como dinero recibido hasta registrar el cobro.</p>
+</section>
+
+<section>
+<h2>📍 GPS y jornada de trabajo</h2>
+<div class="cards" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px">
+ <div class="card metric"><span>Distancia de hoy</span><strong id="gpsKm">0,00 km</strong><small id="gpsStatus">GPS detenido</small></div>
+ <div class="card metric"><span>Tiempo trabajado</span><strong id="workTime">00:00:00</strong><small id="workStatus">Jornada no iniciada</small></div>
+</div>
+<div class="tabs">
+ <button class="primary" id="startWork" style="width:auto;margin:0">▶ Iniciar jornada</button>
+ <button class="secondary" id="pauseWork">⏸ PAUSA</button>
+ <button class="secondary" id="resumeWork">▶ REANUDAR</button>
+ <button class="danger" id="finishWork">■ Terminar día</button>
+</div>
+<p class="notice" id="gpsNotice">El GPS registra distancia mientras la jornada está activa. Permití el acceso a la ubicación y mantené esta página abierta. En iPhone, el navegador puede suspender el GPS si la pantalla se bloquea o la página queda en segundo plano.</p>
+</section>
+
+<section>
+<h2>🧾 Registrar gasto</h2>
+<form id="expenseForm">
+<label for="expenseAmount">Monto del gasto (₡)</label><input id="expenseAmount" type="number" min="1" step="1" placeholder="Ej. 5000" required>
+<label for="expenseType">Tipo de gasto</label><select id="expenseType"><option>Gasolina</option><option>Gas LP</option><option>Mantenimiento</option><option>Otro</option></select>
+<label for="expenseNote">Descripción (opcional)</label><input id="expenseNote" maxlength="100" placeholder="Ej. aceite">
+<button class="primary" type="submit">Guardar gasto</button>
+</form>
+</section>
+<section>
+<h2>💰 Pendientes de cobro</h2><div id="debts" class="empty">No hay fiados pendientes.</div>
+</section>
+<section>
+<h2>📋 Historial</h2>
+<div class="tabs"><button class="active" data-filter="all">Todo</button><button data-filter="trip">Viajes</button><button data-filter="expense">Gastos</button></div>
+<div id="history" class="empty">Todavía no hay movimientos.</div>
+<button class="secondary" id="export">Exportar respaldo CSV</button>
+<button class="danger" id="clear" style="float:right">Borrar todos los datos</button>
+</section>
+<p class="notice">Los datos se guardan en este navegador en este dispositivo. Usá “Exportar respaldo CSV” periódicamente. Si borrás los datos del navegador o cambiás de teléfono, podrías perderlos.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('es-CR',{style:'currency',currency:'CRC',maximumFractionDigits:0}).format(n||0);
+let data={trips:[],expenses:[]}, method='Efectivo', filter='all';
+try{data=JSON.parse(localStorage.getItem('miTaxeoData'))||data}catch(e){}
+function save(){localStorage.setItem('miTaxeoData',JSON.stringify(data));render()}
+function dateStr(d){return new Date(d).toLocaleString('es-CR',{dateStyle:'short',timeStyle:'short'})}
+function receivedTrip(t){return t.method!=='Fiado' ? t.amount : (t.paid||0)}
+function render(){
+ const total=data.trips.reduce((s,t)=>s+t.amount,0), rec=data.trips.reduce((s,t)=>s+receivedTrip(t),0), owed=data.trips.reduce((s,t)=>s+(t.amount-(t.paid||0)),0), exp=data.expenses.reduce((s,e)=>s+e.amount,0);
+ $('total').textContent=money(total);$('received').textContent=money(rec);$('owed').textContent=money(owed);$('expenses').textContent=money(exp);
+ const debts=data.trips.filter(t=>t.method==='Fiado'&&t.amount>(t.paid||0));
+ $('debts').innerHTML=debts.length?debts.map(t=>`<div class="item"><div><strong>${esc(t.customer||'Cliente sin nombre')}</strong><div class="muted">${dateStr(t.date)} · Deuda original ${money(t.amount)}</div><span class="pill debt">Debe ${money(t.amount-(t.paid||0))}</span></div><div><button class="secondary" onclick="payDebt('${t.id}')">Registrar abono</button></div></div>`).join(''):'<div class="empty">No hay fiados pendientes.</div>';
+ let rows=[];
+ if(filter!=='expense') rows.push(...data.trips.map(t=>({...t,kind:'trip',sort:t.date})));
+ if(filter!=='trip') rows.push(...data.expenses.map(e=>({...e,kind:'expense',sort:e.date})));
+ rows.sort((a,b)=>b.sort.localeCompare(a.sort));
+ $('history').innerHTML=rows.length?rows.map(x=>x.kind==='trip'?`<div class="item"><div><strong>Viaje · ${esc(x.customer||'Sin descripción')}</strong><div class="muted">${dateStr(x.date)}</div><span class="pill ${x.method==='Fiado'?'debt':''}">${x.method}${x.method==='Fiado'?' · pendiente '+money(x.amount-(x.paid||0)):''}</span></div><div class="amount">${money(x.amount)}</div></div>`:`<div class="item"><div><strong>Gasto · ${esc(x.type)}</strong><div class="muted">${dateStr(x.date)}${x.note?' · '+esc(x.note):''}</div></div><div class="amount">−${money(x.amount)}</div></div>`).join(''):'<div class="empty">Todavía no hay movimientos.</div>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.querySelectorAll('[data-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.method;document.querySelectorAll('[data-method]').forEach(x=>x.classList.toggle('active',x===b))}));
+$('tripForm').addEventListener('submit',e=>{e.preventDefault();const amount=Number($('amount').value);if(!(amount>0))return;data.trips.push({id:String(Date.now())+Math.random().toString(16).slice(2),amount,method,customer:$('customer').value.trim(),date:new Date().toISOString(),paid:0});$('customer').value='';$('amount').value='';save()});
+$('expenseForm').addEventListener('submit',e=>{e.preventDefault();const amount=Number($('expenseAmount').value);if(!(amount>0))return;data.expenses.push({id:String(Date.now())+Math.random().toString(16).slice(2),amount,type:$('expenseType').value,note:$('expenseNote').value.trim(),date:new Date().toISOString()});$('expenseAmount').value='';$('expenseNote').value='';save()});
+window.payDebt=id=>{const t=data.trips.find(x=>x.id===id);if(!t)return;const balance=t.amount-(t.paid||0);const raw=prompt('Saldo pendiente: '+money(balance)+'\n¿Cuánto abonó el cliente?');if(raw===null)return;const n=Number(raw);if(!(n>0)||n>balance){alert('Ingresá un abono mayor que cero y no superior al saldo.');return}t.paid=(t.paid||0)+n;t.payments=t.payments||[];t.payments.push({amount:n,date:new Date().toISOString()});save()};
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render()}));
+$('export').addEventListener('click',()=>{const rows=[['tipo','fecha','monto','forma_pago_o_categoria','cliente_descripcion','abonado','saldo_pendiente']];data.trips.forEach(t=>rows.push(['viaje',t.date,t.amount,t.method,t.customer||'',t.paid||0,t.method==='Fiado'?t.amount-(t.paid||0):0]));data.expenses.forEach(x=>rows.push(['gasto',x.date,x.amount,x.type,x.note||'','','']));const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download='respaldo-mi-taxeo.csv';a.click();URL.revokeObjectURL(a.href)});
+$('clear').addEventListener('click',()=>{if(confirm('¿Seguro que querés borrar todos los viajes, gastos y fiados de este dispositivo? Esta acción no se puede deshacer.')){data={trips:[],expenses:[]};save()}});
+render();
+
+// Seguimiento de jornada y GPS. La distancia se calcula entre posiciones GPS válidas.
+let work = {date:new Date().toLocaleDateString('en-CA'), active:false, startedAt:null, elapsedMs:0, lastTick:null, distanceM:0, lastPos:null, watchId:null, points:0};
+try {
+ const savedWork=JSON.parse(localStorage.getItem('miTaxeoWork'));
+ if(savedWork && savedWork.date===work.date) work={...work,...savedWork,watchId:null,lastPos:null};
+} catch(e){}
+function saveWork(){const copy={...work,watchId:null,lastPos:null};localStorage.setItem('miTaxeoWork',JSON.stringify(copy));renderWork()}
+function haversine(a,b){const R=6371000,rad=x=>x*Math.PI/180;const dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon);const q=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
+function fmtTime(ms){let s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return [h,m,ss].map(n=>String(n).padStart(2,'0')).join(':')}
+function elapsedNow(){return work.elapsedMs+(work.active&&work.startedAt?Date.now()-work.startedAt:0)}
+function renderWork(){
+ if(!$('gpsKm'))return;
+ $('gpsKm').textContent=(work.distanceM/1000).toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2})+' km';
+ $('workTime').textContent=fmtTime(elapsedNow());
+ $('workStatus').textContent=work.active?'Jornada activa':(work.elapsedMs>0?'En pausa / jornada detenida':'Jornada no iniciada');
+ $('gpsStatus').textContent=work.active?(work.points?'GPS activo · '+work.points+' puntos':'Buscando señal GPS…'):'GPS detenido';
+ $('startWork').disabled=work.active||work.elapsedMs>0;
+ $('pauseWork').disabled=!work.active;
+ $('resumeWork').disabled=work.active||work.elapsedMs===0;
+}
+function stopGPS(){if(work.watchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(work.watchId)}work.watchId=null;work.lastPos=null}
+function startGPS(){
+ if(!navigator.geolocation){$('gpsNotice').textContent='Este navegador no permite acceder al GPS. Probá abrir la aplicación en Safari o Chrome y verificá los permisos.';return}
+ if(!window.isSecureContext){$('gpsNotice').textContent='Para usar GPS, abrí esta aplicación desde una conexión segura (HTTPS) o desde un entorno local compatible.';return}
+ stopGPS();
+ work.watchId=navigator.geolocation.watchPosition(pos=>{
+  if(!work.active)return;
+  const c=pos.coords;
+  if(c.accuracy>70){$('gpsNotice').textContent='Señal GPS imprecisa (±'+Math.round(c.accuracy)+' m). Esperando una ubicación mejor.';return}
+  const current={lat:c.latitude,lon:c.longitude,accuracy:c.accuracy};
+  if(work.lastPos){const d=haversine(work.lastPos,current);if(d>=3&&d<500)work.distanceM+=d}
+  work.lastPos=current;work.points++;saveWork();
+  $('gpsNotice').textContent='GPS activo. Precisión aproximada: ±'+Math.round(c.accuracy)+' m. La distancia es una estimación y puede variar según la señal.';
+ },err=>{
+  const msgs={1:'Permiso de ubicación denegado. Permití la ubicación para este sitio en los ajustes del navegador.',2:'No se pudo obtener ubicación. Revisá el GPS y la señal.',3:'Se agotó el tiempo de espera del GPS. Se seguirá intentando.'};
+  $('gpsNotice').textContent=msgs[err.code]||'No se pudo leer el GPS.';
+ },{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+}
+$('startWork').addEventListener('click',()=>{
+ if(work.active)return;
+ if(work.elapsedMs>0){return}
+ work.date=new Date().toLocaleDateString('en-CA');work.active=true;work.startedAt=Date.now();work.lastPos=null;
+ saveWork();startGPS();
+});
+$('pauseWork').addEventListener('click',()=>{
+ if(!work.active)return;
+ work.elapsedMs+=Date.now()-work.startedAt;work.startedAt=null;work.active=false;stopGPS();saveWork();
+ $('gpsNotice').textContent='Jornada en pausa. El GPS dejó de registrar distancia.';
+});
+$('resumeWork').addEventListener('click',()=>{
+ if(work.active||work.elapsedMs===0)return;
+ work.active=true;work.startedAt=Date.now();work.lastPos=null;saveWork();startGPS();
+});
+$('finishWork').addEventListener('click',()=>{
+ if(!work.active&&work.elapsedMs===0){alert('Primero iniciá la jornada.');return}
+ if(!confirm('¿Terminar la jornada de hoy? Se guardarán el tiempo y la distancia acumulados.'))return;
+ if(work.active)work.elapsedMs+=Date.now()-work.startedAt;
+ work.startedAt=null;work.active=false;stopGPS();saveWork();
+ $('gpsNotice').textContent='Jornada terminada. Distancia y tiempo guardados en este dispositivo. Para comenzar otro día, usá “Reiniciar jornada” después de revisar el resumen.';
+ $('startWork').disabled=false;$('startWork').textContent='↻ Reiniciar jornada';
+});
+$('startWork').addEventListener('click',()=>{
+ if(!work.active&&work.elapsedMs>0&&$('startWork').textContent.includes('Reiniciar')){
+   if(!confirm('¿Iniciar una jornada nueva? La jornada anterior se guardará en el resumen actual solo si exportás el respaldo.'))return;
+   work={date:new Date().toLocaleDateString('en-CA'),active:true,startedAt:Date.now(),elapsedMs:0,lastTick:null,distanceM:0,lastPos:null,watchId:null,points:0};
+   $('startWork').textContent='▶ Iniciar jornada';saveWork();startGPS();
+ }
+});
+setInterval(()=>{if(work.active)renderWork()},1000);
+renderWork();
+
+</script>
+</body></html>
